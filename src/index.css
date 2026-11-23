@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #2b1d12;
+  --paper: #f1e6cc;
+  --kraft: #dcc69c;
+  --rust: #b4521e;
+  --moss: #5d6b2f;
+  --gold: #e7ab3f;
+  --bad: #a3261b;
+  --panel-dark: rgba(24, 16, 10, 0.78);
+  --display: 'Alegreya', Georgia, 'Times New Roman', serif;
+  --body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1b140e;
+  color: var(--paper);
+  font-family: var(--body);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.font-display {
+  font-family: var(--display);
+}
+
+.paper-sheet {
+  background-color: var(--paper);
+  color: var(--ink);
+  background-image: radial-gradient(rgba(120, 80, 30, 0.08) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+@keyframes hurtFlash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hurt-flash {
+  animation: hurtFlash 0.55s ease-out forwards;
+}
+
+@keyframes toastIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-in {
+  animation: toastIn 0.22s ease-out;
+}

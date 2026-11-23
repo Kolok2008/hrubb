@@ -1,0 +1,6 @@
+{
+  "name": "Mushroom Hollow",
+  "description": "3D first-person mushroom foraging game with articulated hands, handcrafted knives, fluid swing animations, and realistic physics object interaction.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

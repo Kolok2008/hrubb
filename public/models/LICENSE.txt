@@ -1,0 +1,4 @@
+All models in this folder are by Quaternius (https://quaternius.com), license CC0 1.0 (public domain).
+Free to use in personal and commercial projects. Credit is not required but appreciated.
+Packs: Stylized Nature MegaKit (Standard), Medieval Village MegaKit (Standard),
+Ultimate Animated Character Pack, Animal Pack Vol.2. Hut.glb was assembled from Medieval Village MegaKit pieces.
