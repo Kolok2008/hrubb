@@ -1281,13 +1281,13 @@ export function buildForestWorld(
 
   // Bilingual sign text updater
   const updateSignLanguage = (lang: Language) => {
-    const stallLabel = lang === 'ru' ? 'СКУПКА ГРИБОВ' : 'СКУПКА ГРИБІВ';
+    const stallLabel = lang === 'ru' ? 'СКУПКА ГРИБОВ' : lang === 'en' ? 'MUSHROOM BUYER' : 'СКУПКА ГРИБІВ';
     const nextTex = createSignTexture(stallLabel);
     if (signMat.map) signMat.map.dispose();
     signMat.map = nextTex;
     signMat.needsUpdate = true;
 
-    const arrowLabel = lang === 'ru' ? '← ИЗБУШКА' : '← ХАТИНКА';
+    const arrowLabel = lang === 'ru' ? '← ИЗБУШКА' : lang === 'en' ? '← CABIN' : '← ХАТИНКА';
     for (const bm of trailSignMats) {
       const tTex = createSignTexture(arrowLabel);
       if (bm.map) bm.map.dispose();

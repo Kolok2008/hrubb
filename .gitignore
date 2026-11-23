@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+desktop/node_modules/
+desktop/out/
+desktop/game/
+desktop/test.js
+*.zip

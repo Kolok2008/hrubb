@@ -287,6 +287,15 @@ export default function App() {
               >
                 UA
               </button>
+              <button
+                type="button"
+                onClick={() => handleLangSwitch('en')}
+                className={`px-2.5 py-1.5 cursor-pointer transition-colors ${
+                  lang === 'en' ? 'bg-[#b4521e] text-[#fff4e4]' : 'text-[#f1e6cc]/75 hover:text-[#f1e6cc]'
+                }`}
+              >
+                EN
+              </button>
             </div>
             <button
               type="button"
@@ -346,11 +355,22 @@ export default function App() {
               >
                 {t(lang, 'settings')}
               </button>
+              {(window as any).desktop && (
+                <button
+                  onClick={() => (window as any).desktop.quit()}
+                  className="text-left font-display font-bold text-[25px] text-[#f1e6cc]/70 hover:text-[#e7ab3f] hover:translate-x-2 transition-transform py-1 cursor-pointer"
+                >
+                  {t(lang, 'quitGame')}
+                </button>
+              )}
             </div>
 
             <p className="mt-8 text-[12px] text-[#f1e6cc]/65 leading-relaxed max-w-[410px]">
               {t(lang, 'menuHint')}
             </p>
+          </div>
+          <div className="fixed bottom-4 right-6 text-[12px] text-[#f1e6cc]/75 bg-[rgba(24,16,10,0.55)] px-2.5 py-1 rounded text-right leading-relaxed">
+            Mushroom Hollow v1.1.0 · {t(lang, 'credits')}
           </div>
         </div>
       )}
@@ -1395,6 +1415,15 @@ export default function App() {
                     }`}
                   >
                     Українська
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLangSwitch('en')}
+                    className={`px-3 py-1.5 cursor-pointer ${
+                      settingsForm.lang === 'en' ? 'bg-[#b4521e] text-[#fff4e4]' : 'bg-[#fff8ea] text-[#2b1d12]'
+                    }`}
+                  >
+                    English
                   </button>
                 </div>
               </div>

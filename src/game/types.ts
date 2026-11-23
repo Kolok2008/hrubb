@@ -1,4 +1,4 @@
-export type Language = 'ru' | 'uk';
+export type Language = 'ru' | 'uk' | 'en';
 export type QualityLevel = 'low' | 'medium' | 'high';
 export type GameMode = 'loading' | 'menu' | 'play' | 'pause' | 'sleep';
 export type PanelType =

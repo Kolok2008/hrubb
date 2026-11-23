@@ -241,8 +241,9 @@ function persistSave(data: SaveData) {
 
 export function loadSettings(): GameSettings {
   const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  const nav = (navigator.language || 'en').toLowerCase();
   const def: GameSettings = {
-    lang: 'ru',
+    lang: nav.startsWith('uk') ? 'uk' : nav.startsWith('ru') ? 'ru' : 'en',
     quality: isTouch ? 'low' : 'medium',
     sens: 1,
     vol: 0.8,
@@ -253,7 +254,7 @@ export function loadSettings(): GameSettings {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<GameSettings>;
       Object.assign(def, parsed);
-      if (def.lang !== 'ru' && def.lang !== 'uk') def.lang = 'ru';
+      if (def.lang !== 'ru' && def.lang !== 'uk' && def.lang !== 'en') def.lang = 'en';
     }
   } catch {
     // ignore
@@ -1655,7 +1656,7 @@ export class GameEngine {
     ctx.fillRect(hx - 6, hy - 6, 12, 12);
     ctx.fillStyle = '#2b1d12';
     ctx.font = 'bold 12px Manrope, sans-serif';
-    ctx.fillText(this.lang === 'ru' ? 'Избушка' : 'Хатина', hx + 9, hy + 4);
+    ctx.fillText(this.lang === 'ru' ? 'Избушка' : this.lang === 'en' ? 'Cabin' : 'Хатина', hx + 9, hy + 4);
 
     const [cx, cy] = toPx(this.world.campfirePos.x, this.world.campfirePos.z);
     ctx.fillStyle = '#e78b24';
@@ -1669,7 +1670,7 @@ export class GameEngine {
     ctx.arc(sx, sy, 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#2b1d12';
-    ctx.fillText(this.lang === 'ru' ? 'Скупка' : 'Скупка', sx + 9, sy + 4);
+    ctx.fillText(this.lang === 'en' ? 'Buyer' : 'Скупка', sx + 9, sy + 4);
 
     // Discovered Fairy Rings on map
     for (const ring of this.livelySystem?.fairyRings || []) {
@@ -2773,13 +2774,13 @@ export class GameEngine {
     }
     if (this.debuffs.bitten > 0) {
       debuffList.push({
-        label: `${t(lang, 'debuffBitten')} (${Math.ceil(this.debuffs.bitten)}с)`,
+        label: `${t(lang, 'debuffBitten')} (${Math.ceil(this.debuffs.bitten)}${lang === 'en' ? 's' : 'с'})`,
         tone: 'bad',
       });
     }
     if (this.debuffs.dizzy > 0) {
       debuffList.push({
-        label: `${t(lang, 'debuffDizzy')} (${Math.ceil(this.debuffs.dizzy)}с)`,
+        label: `${t(lang, 'debuffDizzy')} (${Math.ceil(this.debuffs.dizzy)}${lang === 'en' ? 's' : 'с'})`,
         tone: 'warn',
       });
     }
