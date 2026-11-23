@@ -49,6 +49,7 @@ import { ViewModelController } from './viewmodel/ViewModelController';
 import { AtmosphereSystem } from './world/AtmosphereSystem';
 import { loadAllModels } from './world/modelLoader';
 import { createLeafPile, createMushroomModel } from './world/MushroomBuilder';
+import { STORY_DAYS, STORY_DEBT, STORY_PAGES, storyEnding, storyLetter, storyPage, STORY_UI, type StoryCard } from './story';
 import { groundHeightAt, HUT_POSE, mossFactorAt, TRAIL, trailDistance, WORLD_SIZE } from './world/terrain';
 import { SurfaceDetector, type SurfaceSample } from './world/SurfaceDetector';
 import { buildForestWorld, updateDaylight, type WorldData } from './world/WorldBuilder';
@@ -195,6 +196,7 @@ function createFreshSave(): SaveData {
     atlas: {},
     driedRack: [],
     achievements: [],
+    story: { debt: STORY_DEBT, pages: [], ended: null },
     stats: {
       picked: 0,
       earned: 0,
@@ -223,6 +225,7 @@ function loadSave(): SaveData | null {
         driedRack: Array.isArray(parsed.driedRack) ? parsed.driedRack : [],
         achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
         stats: { ...base.stats, ...(parsed.stats || {}) },
+        story: parsed.story ? { ...base.story!, ...parsed.story } : base.story,
       };
     }
   } catch {
@@ -331,6 +334,116 @@ export class GameEngine {
   private nextDryId = 1;
   private eventId: ForestEventId = 'calm';
   private daySummary: DaySummary | null = null;
+  private storyCard: StoryCard | null = null;
+  private storyPageMesh: THREE.Group | null = null;
+  private storyPagePos: THREE.Vector3 | null = null;
+
+  private get story() {
+    if (!this.save.story) this.save.story = { debt: STORY_DEBT, pages: [], ended: null };
+    return this.save.story;
+  }
+
+  private showStory(card: StoryCard) {
+    this.storyCard = card;
+    this.openPanel('story');
+  }
+
+  public closeStory() {
+    this.storyCard = null;
+    this.panel = null;
+    this.audio.ui();
+    if (this.mode === 'play') {
+      this.requestLock();
+      this.player.enabled = true;
+      this.vm?.setPaused(false);
+    }
+    this.emitHud();
+  }
+
+  public payDebt() {
+    const st = this.story;
+    if (st.debt <= 0) return;
+    const amt = Math.min(st.debt, this.save.money);
+    if (amt <= 0) return;
+    this.save.money -= amt;
+    st.debt -= amt;
+    this.audio.coins(6);
+    this.toast(`${STORY_UI[this.lang].debt}: −${amt} ₴`, 'good');
+    if (st.debt <= 0 && st.ended !== 'won') {
+      st.ended = 'won';
+      persistSave(this.save);
+      this.showStory(storyEnding(this.lang, true));
+      return;
+    }
+    persistSave(this.save);
+    this.emitHud();
+  }
+
+  private placeStoryPage() {
+    if (this.storyPageMesh) {
+      this.scene.remove(this.storyPageMesh);
+      this.storyPageMesh = null;
+      this.storyPagePos = null;
+    }
+    const next = this.story.pages.length;
+    if (next >= STORY_PAGES) return;
+    // deterministic per day: a point beside the trail, further each page
+    const r = mulberry32(this.save.day * 131 + next * 7);
+    const samples = TRAIL.samples;
+    const idx = Math.floor(r() * samples.length);
+    const p = samples[idx];
+    const nxt = samples[(idx + 1) % samples.length];
+    const side = r() < 0.5 ? -1 : 1;
+    const off = 4 + r() * (4 + next * 1.2);
+    const dx = nxt.x - p.x, dz = nxt.z - p.z, len = Math.hypot(dx, dz) || 1;
+    const x = p.x + (-dz / len) * off * side;
+    const z = p.z + (dx / len) * off * side;
+    const y = groundHeightAt(x, z);
+    const g = new THREE.Group();
+    const cv = document.createElement('canvas');
+    cv.width = 128; cv.height = 160;
+    const c = cv.getContext('2d')!;
+    c.fillStyle = '#efe2c2'; c.fillRect(0, 0, 128, 160);
+    c.strokeStyle = 'rgba(90,60,30,0.55)'; c.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(14, 26 + i * 14); c.lineTo(114 - (i % 3) * 12, 26 + i * 14); c.stroke(); }
+    c.strokeStyle = '#a07040'; c.lineWidth = 4; c.strokeRect(2, 2, 124, 156);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const paper = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.32, 0.4),
+      new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, emissive: '#ffcf6a', emissiveIntensity: 0.35, roughness: 0.9 }),
+    );
+    paper.name = 'paper';
+    g.add(paper);
+    const glow = new THREE.PointLight('#ffd27a', 2.2, 7);
+    glow.position.y = 0.3;
+    g.add(glow);
+    g.position.set(x, y + 0.55, z);
+    this.scene.add(g);
+    this.storyPageMesh = g;
+    this.storyPagePos = new THREE.Vector3(x, y, z);
+  }
+
+  private tickStory(dt: number) {
+    if (!this.storyPageMesh || !this.storyPagePos) return;
+    const t = performance.now() / 1000;
+    const paper = this.storyPageMesh.getObjectByName('paper');
+    if (paper) {
+      paper.rotation.y += dt * 0.9;
+      paper.position.y = Math.sin(t * 1.6) * 0.06;
+    }
+    if (this.mode !== 'play' || this.panel) return;
+    const d = Math.hypot(this.player.pos.x - this.storyPagePos.x, this.player.pos.z - this.storyPagePos.z);
+    if (d < 1.7) {
+      const i = this.story.pages.length;
+      this.story.pages.push(i);
+      persistSave(this.save);
+      this.scene.remove(this.storyPageMesh);
+      this.storyPageMesh = null;
+      this.storyPagePos = null;
+      this.audio.pickupItem();
+      this.showStory(storyPage(this.lang, i));
+    }
+  }
   private dayStats = {
     picked: 0,
     perfect: 0,
@@ -1001,6 +1114,7 @@ export class GameEngine {
     this.panel = null;
     this.player.bootsLevel = this.save.up.boots;
     this.world.syncDryingRackVisuals(this.save.driedRack);
+    if (!this.storyPageMesh) this.placeStoryPage();
     const fromMenu = this.mode === 'menu';
     this.setMode('play');
     if (fromMenu) this.flyIntoGameplay();
@@ -1044,6 +1158,10 @@ export class GameEngine {
     const evLoc = getEventLoc(this.lang, this.eventId);
     const wLoc = getWeatherLoc(this.lang, this.atmosphere.weather);
     this.toast(`${t(this.lang, 'day')} 1 · ${wLoc.name} · ${evLoc.name}`, 'good');
+    this.placeStoryPage();
+    setTimeout(() => {
+      if (!this.destroyed && this.mode === 'play') this.showStory(storyLetter(this.lang));
+    }, 2600);
   }
 
   public resumeGame() {
@@ -1598,6 +1716,14 @@ export class GameEngine {
     this.panel = null;
     this.setMode('play');
     this.requestLock();
+    this.placeStoryPage();
+    if (this.story.debt > 0 && !this.story.ended && this.save.day > STORY_DAYS) {
+      this.story.ended = 'lost';
+      persistSave(this.save);
+      setTimeout(() => this.showStory(storyEnding(this.lang, false)), 1200);
+    } else if (this.storyPageMesh) {
+      this.toast(STORY_UI[this.lang].page, '');
+    }
     const wLoc = getWeatherLoc(this.lang, this.atmosphere.weather);
     const evLoc = getEventLoc(this.lang, this.eventId);
     this.toast(`${t(this.lang, 'day')} ${this.save.day} · ${wLoc.name} · ${evLoc.name}`, 'good');
@@ -2851,6 +2977,14 @@ export class GameEngine {
       muted: this.audio.muted,
       chasingLively: this.chasingLively,
       daySummary: this.daySummary,
+      story: {
+        debt: this.story.debt,
+        daysLeft: Math.max(0, STORY_DAYS - this.save.day + 1),
+        pages: this.story.pages.length,
+        ended: this.story.ended,
+        card: this.storyCard,
+        pageToday: Boolean(this.storyPageMesh),
+      },
       achievementBanner: this.achievementBanner,
     });
   }
@@ -3066,6 +3200,7 @@ export class GameEngine {
       },
     );
 
+    this.tickStory(1 / 60);
     this.stallDist = Math.hypot(
       this.player.pos.x - this.world.stallPos.x,
       this.player.pos.z - this.world.stallPos.z,

@@ -184,9 +184,9 @@ export class PlayerController {
     const weight = stealthScale * paceScale;
 
     // Comfortable, non-jarring micro-amplitude camera weight curve
-    const dipDepth = (0.011 + ev.sprintBlend * 0.0085) * stealthScale * (ev.exhausted ? 1.18 : 1);
-    const rollAmt = (0.0042 + ev.sprintBlend * 0.0032) * stealthScale;
-    const pitchAmt = (0.0045 + ev.sprintBlend * 0.0035) * stealthScale * (ev.exhausted ? 1.25 : 1);
+    const dipDepth = (0.006 + ev.sprintBlend * 0.004) * stealthScale * (ev.exhausted ? 1.18 : 1);
+    const rollAmt = (0.0024 + ev.sprintBlend * 0.0014) * stealthScale;
+    const pitchAmt = (0.0025 + ev.sprintBlend * 0.0015) * stealthScale * (ev.exhausted ? 1.25 : 1);
 
     const tl = gsap.timeline({
       onStart: () => {
@@ -202,8 +202,8 @@ export class PlayerController {
         dipY: -dipDepth,
         rollZ: ev.foot * rollAmt,
         pitchX: -pitchAmt,
-        duration: 0.075,
-        ease: 'power2.out',
+        duration: 0.13,
+        ease: 'sine.inOut',
       },
       0,
     );
@@ -214,14 +214,14 @@ export class PlayerController {
         this.onStepPhase?.('toe', ev);
       },
       [],
-      0.075,
+      0.13,
     ).to(
       this.stepCam,
       {
         dipY: dipDepth * 0.16,
         rollZ: 0,
         pitchX: pitchAmt * 0.22,
-        duration: 0.125,
+        duration: 0.2,
         ease: 'sine.inOut',
       },
       0.075,
@@ -417,8 +417,8 @@ export class PlayerController {
 
     // C-infinity smooth organic figure-8 head motion (ZERO Math.abs sharp cusps!)
     const phaseRad = this.stepPhase * Math.PI;
-    const vAmp = THREE.MathUtils.lerp(0.022, 0.036, this.sprintBlend) * (1 - this.crouch * 0.45);
-    const hAmp = THREE.MathUtils.lerp(0.014, 0.022, this.sprintBlend) * (1 - this.crouch * 0.4);
+    const vAmp = THREE.MathUtils.lerp(0.02, 0.027, this.sprintBlend) * (1 - this.crouch * 0.45);
+    const hAmp = THREE.MathUtils.lerp(0.012, 0.015, this.sprintBlend) * (1 - this.crouch * 0.4);
     const bobY = ((1 - Math.cos(phaseRad * 2)) * 0.5 - 0.5) * vAmp * gaitAmp;
     const bobX = Math.sin(phaseRad) * hAmp * gaitAmp;
 
@@ -450,7 +450,7 @@ export class PlayerController {
     this.cam.rotation.set(
       this.pitch + sprintPitch + this.stepCam.pitchX + this.cameraImpulse.rot.x,
       this.yaw + this.cameraImpulse.rot.y,
-      strafeRoll + bobX * 0.14 + this.stepCam.rollZ + this.cameraImpulse.rot.z,
+      strafeRoll + bobX * 0.08 + this.stepCam.rollZ + this.cameraImpulse.rot.z,
     );
   }
 

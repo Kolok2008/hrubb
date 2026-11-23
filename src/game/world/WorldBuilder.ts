@@ -1048,47 +1048,75 @@ export function buildForestWorld(
   stall.position.set(sx, sy, sz);
   stall.rotation.y = Math.atan2(right.x, right.z);
 
-  const postMat = new THREE.MeshStandardMaterial({ color: '#7a5030', roughness: 0.9 });
-  for (const px of [-0.9, 0.9]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.3, 0.1), postMat);
-    post.position.set(px, 1.15, 0);
-    stall.add(post);
+  const postMat = new THREE.MeshStandardMaterial({ map: createWoodGrainTexture('#5a3519'), roughness: 0.88 });
+  const plankMat = new THREE.MeshStandardMaterial({ map: createWoodGrainTexture('#8a5a30'), roughness: 0.82 });
+  const box = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, rz = 0, rx = 0) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    mesh.position.set(x, y, z); mesh.rotation.z = rz; mesh.rotation.x = rx; stall.add(mesh); return mesh;
+  };
+  // four posts
+  for (const px of [-1.15, 1.15]) for (const pz of [-0.35, 0.45]) box(0.12, 2.5, 0.12, postMat, px, 1.25, pz);
+  // counter: plank front + top
+  box(2.4, 0.85, 0.08, plankMat, 0, 0.45, 0.48);
+  for (let i = 0; i < 5; i++) box(0.02, 0.85, 0.09, postMat, -0.96 + i * 0.48, 0.45, 0.5);
+  box(2.5, 0.07, 0.75, postMat, 0, 0.9, 0.12);
+  box(2.4, 0.85, 0.6, plankMat, 0, 0.45, 0.12);
+  // striped awning (red/cream)
+  const awnCanvas = document.createElement('canvas'); awnCanvas.width = 256; awnCanvas.height = 32;
+  const actx = awnCanvas.getContext('2d')!;
+  for (let i = 0; i < 8; i++) { actx.fillStyle = i % 2 ? '#efe0c0' : '#a8331f'; actx.fillRect(i * 32, 0, 32, 32); }
+  const awnTex = new THREE.CanvasTexture(awnCanvas); awnTex.colorSpace = THREE.SRGBColorSpace;
+  const awnMat = new THREE.MeshStandardMaterial({ map: awnTex, roughness: 0.95, side: THREE.DoubleSide });
+  const awn = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.25), awnMat);
+  awn.position.set(0, 2.42, 0.25); awn.rotation.x = -Math.PI / 2 + 0.38; stall.add(awn);
+  // scalloped valance
+  for (let i = 0; i < 9; i++) {
+    const v = new THREE.Mesh(new THREE.CircleGeometry(0.15, 12, Math.PI, Math.PI), awnMat);
+    v.material = new THREE.MeshStandardMaterial({ color: i % 2 ? '#efe0c0' : '#a8331f', side: THREE.DoubleSide, roughness: 0.95 });
+    v.position.set(-1.2 + i * 0.3, 2.2, 0.83); stall.add(v);
   }
-  const signMat = new THREE.MeshStandardMaterial({ map: createSignTexture('СКУПКА ГРИБІВ'), roughness: 0.8 });
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(2, 0.62, 0.06), [
-    postMat,
-    postMat,
-    postMat,
-    postMat,
-    signMat,
-    postMat,
-  ]);
-  sign.position.set(0, 2.05, 0.04);
+  // sign board hung under the awning (readable, front-facing)
+  const signMat = new THREE.MeshStandardMaterial({ map: createSignTexture('MUSHROOM BUYER'), roughness: 0.7, emissive: '#3a2208', emissiveIntensity: 0.25 });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.69, 0.06), [postMat, postMat, postMat, postMat, signMat, postMat]);
+  sign.position.set(0, 2.85, -0.15);
   stall.add(sign);
-
-  const counter = new THREE.Mesh(
-    new THREE.BoxGeometry(1.9, 0.9, 0.55),
-    new THREE.MeshStandardMaterial({ color: '#8a5a34', roughness: 0.85 }),
-  );
-  counter.position.set(0, 0.45, 0.1);
-  stall.add(counter);
-
-  const scalePan = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.16, 0.03, 20),
-    new THREE.MeshStandardMaterial({ color: '#b8a070', metalness: 0.72, roughness: 0.34 }),
-  );
-  scalePan.position.set(-0.5, 0.95, 0.1);
-  stall.add(scalePan);
-
-  for (const [mx, sp] of [
-    [0.1, 'chanterelle'],
-    [0.55, 'porcini'],
-  ] as const) {
-    const m = createMushroomModel(sp, 5);
-    m.position.set(mx, 0.9, 0.1);
-    m.scale.setScalar(1.6);
-    stall.add(m);
+  for (const px of [-0.9, 0.9]) box(0.06, 0.5, 0.06, postMat, px, 2.6, -0.2);
+  // scale
+  const brass = new THREE.MeshStandardMaterial({ color: '#c9a45a', metalness: 0.8, roughness: 0.3 });
+  const scalePan = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.04, 24), brass);
+  scalePan.position.set(-0.75, 1.13, 0.15); stall.add(scalePan);
+  const scaleBase = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.12, 0.2, 16), brass);
+  scaleBase.position.set(-0.75, 1.03, 0.15); stall.add(scaleBase);
+  // wicker baskets with mushrooms on the counter
+  const wicker = new THREE.MeshStandardMaterial({ map: createWickerTexture(), roughness: 0.9 });
+  for (const [bx, sp] of [[-0.15, 'chanterelle'], [0.55, 'porcini']] as const) {
+    const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.2, 0.16, 20, 1, true), wicker);
+    basket.material.side = THREE.DoubleSide;
+    basket.position.set(bx, 1.02, 0.15); stall.add(basket);
+    for (let k = 0; k < 3; k++) {
+      const m = createMushroomModel(sp, 5 + k);
+      m.position.set(bx + (k - 1) * 0.11, 0.98, 0.15 + (k % 2) * 0.06);
+      m.scale.setScalar(1.25); m.rotation.y = k * 1.7; stall.add(m);
+    }
   }
+  // hanging string of dried mushrooms
+  for (let i = 0; i < 6; i++) {
+    const m = createMushroomModel('porcini', 20 + i);
+    m.scale.setScalar(0.7); m.rotation.z = Math.PI; m.position.set(-0.9 + i * 0.36, 2.05, 0.75); stall.add(m);
+  }
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 2.1, 6), new THREE.MeshStandardMaterial({ color: '#c8b080' }));
+  rope.rotation.z = Math.PI / 2; rope.position.set(0, 2.12, 0.75); stall.add(rope);
+  // lantern
+  const lanternGlass = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.14), new THREE.MeshStandardMaterial({ color: '#ffcf7a', emissive: '#ffa53a', emissiveIntensity: 1.6 }));
+  lanternGlass.position.set(1.15, 2.0, 0.62); stall.add(lanternGlass);
+  box(0.18, 0.03, 0.18, brass, 1.15, 2.11, 0.62);
+  // crates & sacks beside the stall
+  const crateMat = new THREE.MeshStandardMaterial({ map: createWoodGrainTexture('#9a6a3a'), roughness: 0.85 });
+  box(0.55, 0.45, 0.5, crateMat, 1.6, 0.23, 0.2, 0, 0).rotation.y = 0.3;
+  box(0.45, 0.35, 0.42, crateMat, 1.55, 0.63, 0.15).rotation.y = -0.2;
+  const sackMat = new THREE.MeshStandardMaterial({ color: '#b59a6a', roughness: 1 });
+  const sack = new THREE.Mesh(new THREE.SphereGeometry(0.28, 14, 10), sackMat);
+  sack.scale.set(1, 1.3, 0.9); sack.position.set(-1.6, 0.33, 0.3); stall.add(sack);
 
   stall.traverse((c) => {
     if ((c as THREE.Mesh).isMesh) {
@@ -1098,10 +1126,10 @@ export function buildForestWorld(
   });
   scene.add(stall);
   staticWoodObjects.push(stall);
-  colliders.push({ x: sx, z: sz, r: 1.1, kind: 'stall', y: sy });
+  colliders.push({ x: sx, z: sz, r: 1.35, kind: 'stall', y: sy });
 
   const stallLantern = new THREE.PointLight('#ffb060', 0, 9);
-  stallLantern.position.set(0.9, 1.9, 0.4);
+  stallLantern.position.set(1.15, 1.9, 0.75);
   stall.add(stallLantern);
 
   // --- Cozy Homestead Additions: Campfire Anchor, Log Bench, Mushroom Drying Rack, Chopping Block, Trail Signposts ---
@@ -1257,7 +1285,7 @@ export function buildForestWorld(
     pole.receiveShadow = true;
     postG.add(pole);
 
-    const boardMat = new THREE.MeshStandardMaterial({ map: createSignTexture('← ИЗБУШКА'), roughness: 0.85 });
+    const boardMat = new THREE.MeshStandardMaterial({ map: createSignTexture('← CABIN'), roughness: 0.85 });
     trailSignMats.push(boardMat);
     const board = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.24, 0.045), [
       postMat,
@@ -1281,13 +1309,13 @@ export function buildForestWorld(
 
   // Bilingual sign text updater
   const updateSignLanguage = (lang: Language) => {
-    const stallLabel = lang === 'ru' ? 'СКУПКА ГРИБОВ' : lang === 'en' ? 'MUSHROOM BUYER' : 'СКУПКА ГРИБІВ';
+    const stallLabel = 'MUSHROOM BUYER'; void lang;
     const nextTex = createSignTexture(stallLabel);
     if (signMat.map) signMat.map.dispose();
     signMat.map = nextTex;
     signMat.needsUpdate = true;
 
-    const arrowLabel = lang === 'ru' ? '← ИЗБУШКА' : lang === 'en' ? '← CABIN' : '← ХАТИНКА';
+    const arrowLabel = '← CABIN';
     for (const bm of trailSignMats) {
       const tTex = createSignTexture(arrowLabel);
       if (bm.map) bm.map.dispose();

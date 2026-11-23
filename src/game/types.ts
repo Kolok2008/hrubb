@@ -10,6 +10,7 @@ export type PanelType =
   | 'settings'
   | 'howto'
   | 'dryer'
+  | 'story'
   | 'dayReport';
 
 export type WeatherKind = 'clear' | 'mist' | 'rain';
@@ -153,6 +154,7 @@ export interface SaveData {
   atlas: Partial<Record<SpeciesId, number>>;
   driedRack: DriedMushroomSlot[];
   achievements: AchievementId[];
+  story?: { debt: number; pages: number[]; ended: 'won' | 'lost' | null };
   stats: {
     picked: number;
     earned: number;
@@ -252,6 +254,7 @@ export interface HudSnapshot {
   muted: boolean;
   chasingLively: boolean;
   daySummary: DaySummary | null;
+  story: { debt: number; daysLeft: number; pages: number; ended: 'won' | 'lost' | null; card: import('./story').StoryCard | null; pageToday: boolean };
   achievementBanner: AchievementId | null;
 }
 

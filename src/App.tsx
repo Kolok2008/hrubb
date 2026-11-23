@@ -14,6 +14,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { GameEngine, loadSettings } from './game/GameEngine';
+import { STORY_PAGES, STORY_UI } from './game/story';
 import {
   getAchievementLoc,
   getEventLoc,
@@ -86,6 +87,7 @@ const INITIAL_HUD: HudSnapshot = {
   muted: false,
   chasingLively: false,
   daySummary: null,
+  story: { debt: 2400, daysLeft: 20, pages: 0, ended: null, card: null, pageToday: false },
   achievementBanner: null,
 };
 
@@ -200,6 +202,7 @@ export default function App() {
       onAtlasImages: (imgs) => setAtlasImgs(imgs),
     });
     engineRef.current = engine;
+    (window as any).__eng = engine;
 
     return () => {
       engine.dispose();
@@ -370,7 +373,7 @@ export default function App() {
             </p>
           </div>
           <div className="fixed bottom-4 right-6 text-[12px] text-[#f1e6cc]/75 bg-[rgba(24,16,10,0.55)] px-2.5 py-1 rounded text-right leading-relaxed">
-            Mushroom Hollow v1.1.0 · {t(lang, 'credits')}
+            Mushroom Hollow v1.2.0 · {t(lang, 'credits')}
           </div>
         </div>
       )}
@@ -393,6 +396,17 @@ export default function App() {
               </span>
               <span className="opacity-35 hidden sm:inline">·</span>
               <span className="text-[#dcc69c] font-semibold hidden sm:inline">{hud.knifeName}</span>
+              {hud.story.debt > 0 && (
+                <>
+                  <span className="opacity-35">·</span>
+                  <span className="text-[#ff9a6a]">
+                    {STORY_UI[lang].debt} {hud.story.debt} ₴ ·{' '}
+                    {hud.story.ended ? STORY_UI[lang].noDeadline : `${hud.story.daysLeft} ${STORY_UI[lang].daysLeft}`}
+                  </span>
+                </>
+              )}
+              <span className="opacity-35">·</span>
+              <span className="text-[#f6d98a]">📜 {hud.story.pages}/{STORY_PAGES}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -807,6 +821,41 @@ export default function App() {
         </div>
       )}
 
+      {/* STORY CARD (letter, diary pages, endings) */}
+      {hud.panel === 'story' && hud.story.card && eng && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[rgba(10,6,3,0.78)] p-4 story-fade">
+          <div className="paper-sheet rounded-md w-[min(620px,100%)] max-h-[88vh] overflow-auto shadow-2xl px-9 py-8 relative">
+            <div className="text-[12px] uppercase tracking-[0.2em] text-[#8a5a30] mb-1">
+              {hud.story.card.kind === 'page'
+                ? `${STORY_UI[lang].pages} · ${(hud.story.card.index ?? 0) + 1}/${STORY_PAGES}`
+                : 'Mushroom Hollow'}
+            </div>
+            <h2 className="font-display font-extrabold text-[32px] leading-tight text-[#2b1d12] mb-4">
+              {hud.story.card.title}
+            </h2>
+            <div className="font-display italic text-[18px] leading-relaxed text-[#3a2817] whitespace-pre-line">
+              {hud.story.card.body}
+            </div>
+            <div className="mt-7 flex gap-3 justify-end">
+              {(hud.story.card.kind === 'won' || hud.story.card.kind === 'lost') && (
+                <button
+                  onClick={() => eng.returnToMenu()}
+                  className="px-5 py-2.5 rounded-md border border-[#2b1d12]/30 text-[#2b1d12] font-bold cursor-pointer hover:bg-[#2b1d12]/5"
+                >
+                  {t(lang, 'mainMenu')}
+                </button>
+              )}
+              <button
+                onClick={() => eng.closeStory()}
+                className="px-6 py-2.5 rounded-md bg-[#b4521e] text-[#fff4e4] font-bold hover:bg-[#9c4215] cursor-pointer"
+              >
+                {hud.story.card.kind === 'won' || hud.story.card.kind === 'lost' ? STORY_UI[lang].keep : STORY_UI[lang].cont}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MUSHROOM DRYING RACK MODAL */}
       {hud.panel === 'dryer' && eng && (
         <div className="fixed inset-0 z-40 grid place-items-center bg-[rgba(14,9,5,0.68)] p-4">
@@ -1102,6 +1151,24 @@ export default function App() {
                   ) : (
                     <p className="text-sm opacity-75 leading-relaxed">{t(lang, 'emptyBasket')}</p>
                   )}
+
+                  <div className="mt-4 rounded-md border border-[#2b1d12]/20 bg-[#2b1d12]/5 p-3.5">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <span className="font-display font-bold text-[18px]">{STORY_UI[lang].debt}</span>
+                      <span className="font-bold tabular-nums text-[#9c3a15]">
+                        {hud.story.debt > 0 ? `${hud.story.debt} ₴` : STORY_UI[lang].paid}
+                      </span>
+                    </div>
+                    {hud.story.debt > 0 && (
+                      <button
+                        onClick={() => eng.payDebt()}
+                        disabled={hud.money <= 0}
+                        className="w-full py-2.5 rounded-md bg-[#5d6b2f] text-[#fff4e4] font-bold hover:bg-[#4b5725] disabled:opacity-40 cursor-pointer"
+                      >
+                        {STORY_UI[lang].pay} ({Math.min(hud.money, hud.story.debt)} ₴)
+                      </button>
+                    )}
+                  </div>
 
                   {sellResult && (
                     <div className="mt-4 bg-[#5d6b2f]/15 rounded-md p-3.5">

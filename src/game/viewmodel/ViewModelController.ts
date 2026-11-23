@@ -732,8 +732,8 @@ export class ViewModelController {
 
     // Smooth C-infinity figure-8 gait bob (matches PlayerController smooth harmonics)
     const stride = stepPhase * Math.PI;
-    const bobX = Math.sin(stride) * gait * THREE.MathUtils.lerp(0.011, 0.024, runB);
-    const bobY = ((1 - Math.cos(stride * 2)) * 0.5 - 0.5) * gait * THREE.MathUtils.lerp(0.012, 0.026, runB);
+    const bobX = Math.sin(stride) * gait * THREE.MathUtils.lerp(0.009, 0.015, runB);
+    const bobY = ((1 - Math.cos(stride * 2)) * 0.5 - 0.5) * gait * THREE.MathUtils.lerp(0.01, 0.016, runB);
     const breath = Math.sin(this.t * (1.55 + runB * 1.4)) * (0.0035 + runB * 0.002);
     const fatigueJitter = exhausted ? Math.sin(this.t * 22) * 0.0014 : 0;
 

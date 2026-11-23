@@ -1090,7 +1090,7 @@ export class AudioEngine {
     }
     if (this.musicTimer < 0) {
       this.phrase();
-      this.musicTimer = nightAmt > 0.5 ? 14 : 10;
+
     }
     if (this.peckTimer < 0 && nightAmt < 0.5) {
       this.woodpecker();
@@ -1236,40 +1236,69 @@ export class AudioEngine {
     }
   }
 
+  private bar = 0;
+  private nextBarAt = 0;
+  // A gentle folk-waltz-ish piece in A minor, 16 bars, guitar arpeggios + pad + bass + melody.
   private phrase() {
     if (!this.ctx) return;
-    const t = this.ctx.currentTime + 0.1;
+    const ctx = this.ctx;
     const isNight = this.night > 0.5;
-    const chords = isNight
-      ? [
-          [110, 164.8, 220, 261.6],
-          [98, 146.8, 196, 233.1],
-          [87.3, 130.8, 174.6, 220],
-          [82.4, 123.5, 164.8, 207.7],
-        ]
-      : [
-          [146.8, 220, 293.7, 370],
-          [130.8, 196, 261.6, 329.6],
-          [110, 164.8, 220, 277.2],
-          [123.5, 185, 246.9, 293.7],
-        ];
-    const ch = chords[this.chord % 4];
-    this.chord++;
-    const step = isNight ? 0.42 : 0.3;
-    const bars = 2;
-    const total = step * 8 * bars;
-    this.pad(
-      ch.map((x) => x * 2),
-      t,
-      total + 1.5,
-    );
-    const pat = [0, 2, 1, 3, 2, 1, 3, 2];
-    for (let b = 0; b < bars; b++) {
-      for (let i = 0; i < 8; i++) {
-        if (isNight && Math.random() < 0.3) continue;
-        const note = ch[pat[i]] * (i === 0 ? 1 : 2);
-        this.pluck(note, t + (b * 8 + i) * step + (Math.random() - 0.5) * 0.02, i === 0 ? 0.28 : 0.17);
-      }
+    const beat = isNight ? 0.82 : 0.68;
+    const barLen = beat * 4;
+    const t = Math.max(ctx.currentTime + 0.05, this.nextBarAt);
+    this.nextBarAt = t + barLen;
+    this.musicTimer = barLen - 0.25;
+    const N = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
+    // chord roots/triads as MIDI
+    const prog: number[][] = [
+      [57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62],
+      [50, 53, 57], [57, 60, 64], [52, 56, 59], [57, 60, 64],
+      [53, 57, 60], [48, 52, 55], [50, 53, 57], [52, 56, 59],
+      [57, 60, 64], [55, 59, 62], [53, 57, 60], [52, 56, 59],
+    ];
+    const mel: (number | null)[][] = [
+      [76, null, 74, 72], [72, null, null, 69], [67, 69, 72, null], [74, null, 71, null],
+      [69, null, 72, 74], [76, null, 77, 76], [74, null, 71, 68], [69, null, null, null],
+      [72, null, 74, 76], [79, null, 76, 72], [74, null, 72, 69], [71, null, 68, 71],
+      [72, 71, 69, null], [67, null, 71, 74], [72, null, 69, 72], [71, null, null, null],
+    ];
+    const i = this.bar % 16;
+    this.bar++;
+    const ch = prog[i];
+    this.pad(ch.map((m) => N(m + 12)), t, barLen + 0.8);
+    // bass
+    this.pluck(N(ch[0] - 12), t, 0.3);
+    if (!isNight) this.pluck(N(ch[0] - 12 + 7), t + beat * 2, 0.18);
+    // arpeggio, 8ths
+    const pat = [0, 1, 2, 1, 2, 1, 0, 2];
+    for (let k = 0; k < 8; k++) {
+      if (isNight && k % 2 === 1) continue;
+      const m = ch[pat[k]] + (k > 0 ? 12 : 0);
+      this.pluck(N(m), t + k * beat * 0.5 + (Math.random() - 0.5) * 0.012, k === 0 ? 0.2 : 0.12);
+    }
+    // melody (skip every other cycle at night for sparseness)
+    const playMel = isNight ? Math.floor(this.bar / 16) % 2 === 0 : Math.floor(this.bar / 16) % 3 !== 2;
+    if (playMel) {
+      mel[i].forEach((m, k) => {
+        if (m == null) return;
+        const tt = t + k * beat;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        const lp = ctx.createBiquadFilter();
+        osc.type = 'triangle';
+        osc.frequency.value = N(m);
+        const vib = ctx.createOscillator();
+        const vg = ctx.createGain();
+        vib.frequency.value = 5.2; vg.gain.value = 3;
+        vib.connect(vg); vg.connect(osc.detune);
+        lp.type = 'lowpass'; lp.frequency.value = 2200;
+        const len = beat * 1.6;
+        g.gain.setValueAtTime(1e-4, tt);
+        g.gain.linearRampToValueAtTime(0.07, tt + 0.06);
+        g.gain.exponentialRampToValueAtTime(1e-4, tt + len);
+        osc.connect(lp); lp.connect(g); g.connect(this.music!);
+        osc.start(tt); vib.start(tt); osc.stop(tt + len + 0.05); vib.stop(tt + len + 0.05);
+      });
     }
   }
 }

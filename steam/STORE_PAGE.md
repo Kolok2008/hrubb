@@ -4,6 +4,8 @@
 A cozy first-person foraging game set in an autumn forest. Kneel down, cut mushrooms by hand along the stem, chase lively mushrooms that hop away on their roots, dry your harvest by the cabin, and fight off wolves with a knife before nightfall.
 
 **About this game:**
+Your grandmother left you her forest cabin — and a 2400 ₴ debt to the forestry office, due in 20 days. Pick, cut, dry and sell mushrooms to keep the cabin, and follow her eight hidden diary pages to the secret of the Golden Mushroom.
+
 Each morning you leave the cabin with a basket and a knife. The forest changes every day: fog, mushroom rain, porcini season, a wolf hunt.
 
 - **Hand-cut mushrooms.** Lower the knife to the green line near the ground and slide it through the stem. Perfect cuts build a streak and raise the price.

@@ -480,22 +480,31 @@ export function createCheckClothTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-export function createSignTexture(text = 'СКУПКА ГРИБІВ'): THREE.CanvasTexture {
-  const [c, ctx] = makeCanvas(512, 160);
-  ctx.fillStyle = '#6a4424';
-  ctx.fillRect(0, 0, 512, 160);
-  for (let i = 0; i < 6; i++) {
-    ctx.fillStyle = `rgba(0,0,0,${0.08 + (i % 2) * 0.06})`;
-    ctx.fillRect(0, i * 27, 512, 2);
+export function createSignTexture(text = 'MUSHROOM BUYER'): THREE.CanvasTexture {
+  const W = 1024, H = 320;
+  const [c, ctx] = makeCanvas(W, H);
+  // planks
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#3e2412'); g.addColorStop(1, '#2a170b');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (let i = 1; i < 4; i++) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, i * (H / 4), W, 3); }
+  for (let i = 0; i < 90; i++) {
+    ctx.strokeStyle = `rgba(255,220,170,${0.03 + Math.random() * 0.04})`;
+    ctx.beginPath(); const y = Math.random() * H; ctx.moveTo(0, y);
+    ctx.bezierCurveTo(W * 0.3, y + 6, W * 0.6, y - 6, W, y + 2); ctx.stroke();
   }
-  ctx.fillStyle = '#f1e2bd';
-  ctx.font = 'bold 62px Georgia, serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, 256, 82);
+  // frame
+  ctx.strokeStyle = '#c99a4a'; ctx.lineWidth = 10; ctx.strokeRect(14, 14, W - 28, H - 28);
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3; ctx.strokeRect(24, 24, W - 48, H - 48);
+  // auto-fit text
+  let size = 150;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  do { ctx.font = `900 ${size}px Georgia, 'Times New Roman', serif`; size -= 4; } while (ctx.measureText(text).width > W - 110 && size > 40);
+  ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillText(text, W / 2 + 5, H / 2 + 9);
+  ctx.fillStyle = '#ffe7a8'; ctx.fillText(text, W / 2, H / 2 + 4);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   return tex;
 }
 
